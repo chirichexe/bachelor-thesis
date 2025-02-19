@@ -1,0 +1,10 @@
+# DOCKER
+Installazione: Vedi docker_install.sh
+Comandi base:
+```sh
+docker info
+docker version
+docker login
+```
+
+
