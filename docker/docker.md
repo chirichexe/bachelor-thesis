@@ -200,4 +200,13 @@ docker              running(1)          /home/davide/Desktop/bachelor-thesis/doc
 test                running(1)          /home/davide/Desktop/bachelor-thesis/docker/docker-compose.yml
 ```
 
-# DOCKER COMPOSE: APPLICAZIONE 3 TIERS
+# CONTAINER REGISTRIES
+è una repository centrale per le immagini Docker. Posso fare push e store del binario dell'immagine su un container registry.
+Docker Hub (ufficiale) o altri repository privati
+
+```sh
+docker images # per vedere le immagini
+docker login
+docker tag node-image-test:latest chirichexe/node-image-test:latest # associo all'immagine un tag
+sudo docker push chirichexe/node-image-test:latest # pusho l'immagine sul container registry
+```
