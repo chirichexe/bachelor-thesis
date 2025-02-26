@@ -119,9 +119,10 @@ Vantaggi:
 # DOCKER - COMPOSE
 Creare applicazioni multi-container (magari uno per ogni "ruolo" specifico es. backend, frontend ...) 
 definendo dei file YAML.
-Utile per piccoli prigetti e test, meno completo di kubernetes.
+Utile per piccoli progetti e test, meno completo di kubernetes.
 
-## Sintassi YAML
+## Linguaggio YAML
+Utilizzato come file di configurazione ```docker-compose.yml``` 
 
 ```yml
 key: value
@@ -133,4 +134,70 @@ sequence:
 json-map: {"key" : "val"}
 ```
 
-## Com
+Esempio file di configurazione docker:
+
+```yml
+services:
+  node-app:
+    build:
+      context: ./node_container
+      dockerfile: Dockerfile
+    container_name: node-container
+    ports:
+      - "3000:3000"
+    volumes:
+      - node-volume:/usr/src/app/logs
+    restart: unless-stopped
+
+volumes:
+  node-volume:
+    driver: local
+
+```
+## Compose
+Elenco la serie di passaggi per avviare il docker compose
+```sh
+docker compose build # Builda l'immagine
+docker compose up -d # avvia in background
+# docker compose down  - per stoppare
+docker compose exec [NOME_APP] sh #per accedere al container
+```
+
+### Avvio docker compose
+
+```sh
+docker compose up -d # partito correttamente
+```
+
+Provando ora ad eseguire
+
+```sh
+docker compose -p [NOME_PROGETTO] up -d
+```
+Esso fallirà perchè la porta 3000 risulta già in uso.
+
+Soluzione: sul file di configurazione:
+
+```yml
+services:
+  node-app:
+    build:
+      context: ./node_container
+      dockerfile: Dockerfile
+    container_name: node-container
+    ports:
+      - "3001:3000" # Incremento la porta esterna
+    volumes:
+      - node-volume:/usr/src/app/logs
+    restart: unless-stopped
+```
+
+Output:
+```console
+❯ sudo docker compose ls
+NAME                STATUS              CONFIG FILES
+docker              running(1)          /home/davide/Desktop/bachelor-thesis/docker/docker-compose.yml
+test                running(1)          /home/davide/Desktop/bachelor-thesis/docker/docker-compose.yml
+```
+
+# DOCKER COMPOSE: APPLICAZIONE 3 TIERS

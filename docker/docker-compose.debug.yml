@@ -1,10 +1,8 @@
-version: '3.4'
-
 services:
-  nodecontainer:
-    image: nodecontainer
+  node-container:
+    image: node-compose-container
     build:
-      context: docker/node_container
+      context: node_container
       dockerfile: ./Dockerfile
     environment:
       NODE_ENV: development

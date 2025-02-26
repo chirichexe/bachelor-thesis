@@ -1,0 +1,10 @@
+services:
+  node-container:
+    image: node-compose-container
+    build:
+      context: node_container
+      dockerfile: ./Dockerfile
+    environment:
+      NODE_ENV: production
+    ports:
+      - "3000:3000" # Range di porte in uso, ognuna mappata nella porta interna 3005

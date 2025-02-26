@@ -12,20 +12,22 @@ const logFilePath = path.join(logDir, 'logs.txt');
 // Assicurati che la directory e il file di log esistano
 fs.mkdirSync(logDir, { recursive: true });
 if (!fs.existsSync(logFilePath)) {
-  fs.writeFileSync(logFilePath, 'Log avviato\n'); // Crea il file con una riga iniziale
+  	fs.writeFileSync(logFilePath, 'Log avviato\n'); // Crea il file con una riga iniziale
 }
 
 // Middleware per scrivere i log
 app.use((req, res, next) => {
-  const log = `${new Date().toISOString()} - ${req.method} ${req.url}\n`;
-  fs.appendFileSync(logFilePath, log);
-  next();
+	const log = `${new Date().toISOString()} - ${req.method} ${req.url}\n`;
+	fs.appendFileSync(logFilePath, log);
+	next();
 });
 
+// Mostra il contenuto del file di log
 app.get('/', (req, res) => {
-  res.send('Hello, World!');
+	const logContent = fs.readFileSync(logFilePath, 'utf8');
+	res.send(logContent);
 });
 
 app.listen(port, () => {
-  console.log(`Server running at http://localhost:${port}`);
+	console.log(`Server running at http://localhost:${port}`);
 });
