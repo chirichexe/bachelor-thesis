@@ -1,33 +1,62 @@
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
+const bodyParser = require('body-parser');
 
 const app = express();
-const port = 3000;
+const port = 3000;	
 
-// Percorso della directory e del file di log
-const logDir = path.join(__dirname, 'logs');
-const logFilePath = path.join(logDir, 'logs.txt');
+/* ---------------------------------------------- */
+/*												  */	
+/*  Progetto test: semplici operazioni CRUD       */
+/*  Su file di testo						      */
+/*												  */
+/* ---------------------------------------------- */
 
-// Assicurati che la directory e il file di log esistano
-fs.mkdirSync(logDir, { recursive: true });
-if (!fs.existsSync(logFilePath)) {
-  	fs.writeFileSync(logFilePath, 'Log avviato\n'); // Crea il file con una riga iniziale
+const dataDir = path.join(__dirname, 'data');		 	// Percorso cartella
+const dataFilePath = path.join(dataDir, 'data.txt'); 	// Percorso file di testo
+app.use(bodyParser.json()); 							// Middleware
+
+/* CREAZIONE ----------------------------------- */
+
+fs.mkdirSync(dataDir, { recursive: true });
+
+if (!fs.existsSync(dataFilePath)) {
+    fs.writeFileSync(dataFilePath, '');
 }
 
-// Middleware per scrivere i log
-app.use((req, res, next) => {
-	const log = `${new Date().toISOString()} - ${req.method} ${req.url}\n`;
-	fs.appendFileSync(logFilePath, log);
-	next();
+/* LETTURA ------------------------------------- */ 
+
+app.get('/read', (req, res) => {
+    const content = fs.readFileSync(dataFilePath, 'utf8');
+    res.send(content);
 });
 
-// Mostra il contenuto del file di log
-app.get('/', (req, res) => {
-	const logContent = fs.readFileSync(logFilePath, 'utf8');
-	res.send(logContent);
+/* (SOVRA) SCRITTURA --------------------------- */ 
+
+app.post('/write', (req, res) => {
+    const { text } = req.body;
+    fs.writeFileSync(dataFilePath, text);
+    res.send('File aggiornato con successo');
 });
+
+/* SCRITTURA IN APPEND ------------------------- */ 
+
+app.post('/append', (req, res) => {
+    const { text } = req.body;
+    fs.appendFileSync(dataFilePath, `\n${text}`);
+    res.send('Testo aggiunto con successo');
+});
+
+/* PULIZIA CONTENUTO --------------------------- */ 
+
+app.delete('/delete', (req, res) => {
+    fs.writeFileSync(dataFilePath, '');
+    res.send('File svuotato con successo');
+});
+
+/* ------------ Server in ascolto -------------- */
 
 app.listen(port, () => {
-	console.log(`Server running at http://localhost:${port}`);
+    console.log(`Server running at http://localhost:${port}`);
 });
