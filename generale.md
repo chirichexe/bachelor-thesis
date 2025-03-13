@@ -1,7 +1,6 @@
-# GENERALE
-## 1. Architettura a microservizi
+# 1. Architettura a microservizi
 
-### Generalità e differenza con architettura monlitica
+## Generalità e differenza con architettura monlitica
 Variante della SOA (service oriented) -> accoppiamento debole tra elementi
 Ognuno ha la propria responsabilità
 
@@ -19,25 +18,24 @@ Essi comunicano tra di loro tramite interfaccia definita da API
 
  - Link: https://aws.amazon.com/it/microservices/ 
 
-### Trasformazione 
+## Trasformazione 
 Creare una "facciata" che permetta di aggiornare il codice legacy (?)
 
-### Benefici e rischi
+## Benefici e rischi
 Benefits:
 Fault isolation
 Open source :)
-Deployveloce and easy scaling
+Deploy veloce and easy scaling
 
 Rischi: 
 importante le !! retry strategies!!
-  
 
-## 2. Cloud Native services
+# 2. Cloud Native services
 Mentalità: pets vs. cattle 
 Infrastruttura immutabile ma elementi distrutti su richiesya, non AGGIORNATI e SOSTITUITI, non aggiornati
 Il container è un 
 
-### 2.1 Containerizzare applicazione
+## 2.1 Containerizzare applicazione
 1. deploy e monitorare container
 2. Continuous integration
 3. Orchestratore 
@@ -47,8 +45,8 @@ Il container è un
 - Link: https://www.cncf.io/projects/
 - https://github.com/kubernetes/kubernetes
 
-## 3. Container
-### Generalità
+# 3. Container
+## Generalità
 Cos'è un container? È un'unità di deployment e ha tutto quello che serve al codice per essere eseguito (codice, librerie, tools ...)
 Usa meno risorse e rende frammentabile, portabile isolato etc...
 
@@ -59,8 +57,5 @@ CONTAINER: Leggerissime, veloci da avviare (non serve boot)
 VM -> ha un'app
 CONTAINER -> hanno tante VM
 
-### Container registry
-
-### Orchestratore
-
-https://youtu.be/kTp5xUtcalw?t=1579
+**Continuazione appunti, vai sulla cartella -> DOCKER**
+**Continuazione appunti, vai sulla cartella -> KUBERNETES**
