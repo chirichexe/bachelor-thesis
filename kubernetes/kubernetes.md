@@ -47,14 +47,78 @@ curl -sfL https://get.k3s.io | sh - # installa
 kubectl get nodes                   # visualizza nodi attivi
 ```
 ## Creazione prima applicazione
+### 1. Deployment
+Un Deployment è una risorsa che gestisce il lifecycle di uno o più Pod in Kubernetes. Permette di:
+- Creare e aggiornare gruppi di Pod.
+- Gestire il numero di repliche (scalabilità).
+- Assicurare che l’applicazione sia sempre disponibile.
+- Fare rollback a una versione precedente se necessario.
 
+#### Esempio
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: [nome-app]
+  labels:
+    app: [nome-app]
+spec:
+  replicas: [n-pods]  # 🔹 Numero di repliche dei Pod
+  selector:
+    matchLabels:
+      app: [nome-app]  # 🔹 Kubernetes sa che questi Pod appartengono a questo Deployment
+  template:
+    metadata:
+      labels:
+        app: [nome-app]  # 🔹 Etichetta assegnata ai Pod per il Service
+    spec:
+      containers:
+      - name: [nome-app]
+        image: [nome-immagine]:[versione]  # 🔹 L'immagine da usare
+        ports:
+        - containerPort: [porta]  # 🔹 La porta che il container espone
+
+```
+> ***IMPORTANTE***
+> Dato che k3s usa containerd invece di Docker, devi caricare l'immagine nel registry interno.
+
+Kubernetes crea 3 Pod con l’immagine nginx:latest.
+- Se un Pod si arresta per errore, Kubernetes lo ricrea automaticamente.
+- Il Deployment si assicura che ci siano sempre 3 Pod attivi.
+
+#### Prova
 - Creiamo ora una prima applicazione, creando un file ```nginx-deploy.yaml```
+
 - Dopodichè la applico con:
 ```sh
 kubectl apply -f nginx-deploy.yaml
 kubectl get pods    # Ottengo i due pod attivi che avevo configurato nel file yaml
 ```
-- Per poter esporre un pod all'esterno devo creare un service, creando un file ```nginx-service.yaml```, poi lo applico
+
+### 2. Service
+
+- Per poter esporre un pod all'esterno devo creare un service,  I Pod, infatti, hanno un IP volatile, quindi se uno viene riavviato cambia IP e l’applicazione potrebbe non trovarlo più.
+
+#### Esempio
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: [nome-servizio]
+spec:
+  selector:
+    app: [nome-servizio]
+  ports:
+    - protocol: TCP
+      port: [port]
+      targetPort: [port]
+      nodePort: 30007  # 🔹 Kubernetes assegna una porta tra 30000-32767
+  type: NodePort
+
+```
+#### Prova
+
+- Creo un file ```nginx-service.yaml```, poi lo applico
 ```sh
 kubectl apply -f nginx-service.yaml
 kubectl get service    # Ottengo i servizi per i pod attivi con anche un ip e porta associati
@@ -74,15 +138,19 @@ In Kubernetes, un servizio di tipo **LoadBalancer** crea automaticamente un bila
 
 L'external IP è in pending perchè k3s non ha un LoadBalancer esterno configurato, ovvero non c'è nulla che fornisce un IP pubblico (ricorda che k3s è progettato per piccoli server / IoT)
 
-*Soluzioni*:
+**Soluzioni**:
 1. Usare un LoadBalancer locale con klipper-lb
 2. Cambiare il servizio in NodePort per accedere direttamente al nodo
-```kubectl port-forward svc/nginx-service 8080:80``` -> localhost:8080 mi fa vedere la pagina di default di Nginx 
+```localhost:8080 ``` -> mi fa vedere la pagina di default di Nginx 
 3. Usare un ingress controller 
 
-# Bibliografia
+## Chiamate da remoto
+facendo ```ip a``` noto che il mio Ip Pubblico è
 
-- docker: video 
-- k3s: corso ufficiale rancher.academy
-https://www.youtube.com/watch?v=QDwhbMvikGQ
+```
+inet 192.168.178.42/24 brd 192.168.178.255 scope global dynamic noprefixroute wlo1
+```
+Perciò alla porta 30080 di quell'indirizzo trovo la pagina che ho hostato
+
+### Load Balancing
 
