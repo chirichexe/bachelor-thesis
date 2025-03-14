@@ -321,3 +321,6 @@ Da implementare...
 - ```kubectl get deployments```: mostra i dettagli del deployment di Nginx.
 - ```kubectl get services```: mostri lo stato del servizio, che dovrebbe essere configurato come tipo LoadBalancer.
 
+# Documentazione consultata
+- [Corso di rancher academy](https://www.rancher.academy/courses/take/k3s-basics/lessons/47407227-introduction-lesson)
+- https://www.youtube.com/watch?v=1hwGdey7iUU

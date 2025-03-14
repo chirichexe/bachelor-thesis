@@ -210,3 +210,7 @@ docker login
 docker tag node-image-test:latest chirichexe/node-image-test:latest # associo all'immagine un tag
 sudo docker push chirichexe/node-image-test:latest # pusho l'immagine sul container registry
 ```
+
+# Documentazione consultata
+- https://docs.docker.com/
+- https://youtu.be/kTp5xUtcalw?si=vxgi2Le5tnYmP8HX

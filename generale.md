@@ -56,6 +56,3 @@ CONTAINER: Leggerissime, veloci da avviare (non serve boot)
 
 VM -> ha un'app
 CONTAINER -> hanno tante VM
-
-**Continuazione appunti, vai sulla cartella -> DOCKER**
-**Continuazione appunti, vai sulla cartella -> KUBERNETES**
