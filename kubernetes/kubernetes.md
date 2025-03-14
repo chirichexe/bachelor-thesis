@@ -254,11 +254,48 @@ NAME            TYPE           CLUSTER-IP      EXTERNAL-IP   PORT(S)        AGE
 nginx-service   LoadBalancer   10.43.177.157   <pending>     80:31066/TCP   2m39s
 ```
 
-**Soluzioni**:
-1. Usare un LoadBalancer locale con klipper-lb
-2. Cambiare il servizio in NodePort per accedere direttamente al nodo
-```localhost:8080 ``` -> mi fa vedere la pagina di default di Nginx 
-3. Usare un ingress controller 
+L'IP è in pending perchè Con k3s, il tipo LoadBalancer di default non assegna un IP pubblico automaticamente.
+Soluzioni: 
+1. Utilizzare Klipper Load Balancer (integrato in k3s) oppure configurare un service di tipo NodePort.
+2. Utilizza l'Ingress Controller utilizzando Traefik (incluso in k3s)
+
+Ho scelto l'opzione 2:
+
+- Creo un file ```nginx-ingress.yaml```, poi lo applico
+```sh
+kubectl apply -f nginx-service.yaml
+kubectl get nodes -o wide    # Ottengo i nodi attivi
+```
+- Aggiungo nel file /etc/hosts ``` 192.168.178.42  nginx.local``` -> sarebbe l'Ip del nodo (master)
+
+- Mi rendo conto che ora effettivamente il LoadBalancer sta distribuendo il carico sui vari pod. Eseguendo 
+```sh
+sudo kubectl describe service nginx-service
+
+Name:                     nginx-service
+Namespace:                default
+Labels:                   <none>
+Annotations:              <none>
+Selector:                 app=nginx
+Type:                     LoadBalancer
+IP Family Policy:         SingleStack
+IP Families:              IPv4
+IP:                       10.43.177.157                                 # Ip del servizio interno nel cluser
+IPs:                      10.43.177.157
+Port:                     <unset>  80/TCP
+TargetPort:               80/TCP
+NodePort:                 <unset>  30080/TCP
+Endpoints:                10.42.0.185:80,10.42.0.183:80,10.42.0.179:80  # Gli Ip dei pod
+Session Affinity:         None
+External Traffic Policy:  Cluster
+Internal Traffic Policy:  Cluster
+Events:
+  Type    Reason                Age   From                   Message
+  ----    ------                ----  ----                   -------
+  Normal  Type                  35m   service-controller     NodePort -> LoadBalancer
+  Normal  EnsuringLoadBalancer  35m   service-controller     Ensuring load balancer
+  Normal  AppliedDaemonSet      35m   service-lb-controller  Applied LoadBalancer DaemonSet kube-system/svclb-nginx-service-7dfbfda6
+```
 
 ### 2. App custom in node.js: NodePort ( /node-app-kubernetes )
 
