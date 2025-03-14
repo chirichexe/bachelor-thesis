@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: node-k3s
+  labels:
+    app: node-k3s
+spec:
+  replicas: 0  # 🔹 Numero di repliche dei Pod
+  selector:
+    matchLabels:
+      app: node-k3s  # 🔹 Kubernetes sa che questi Pod appartengono a questo Deployment
+  template:
+    metadata:
+      labels:
+        app: node-k3s  # 🔹 Etichetta assegnata ai Pod per il Service
+    spec:
+      containers:
+      - name: node-k3s
+        image: node-image-test:latest  # 🔹 L'immagine Docker da usare
+        ports:
+        - containerPort: 80  # 🔹 La porta che il container espone
