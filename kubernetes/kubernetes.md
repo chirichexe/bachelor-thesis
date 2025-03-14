@@ -17,10 +17,17 @@ Struttura principale: [ Cluster [ Node [ Pod ] ] ]
 # K3S (versione consigliata dal professore per IoT)
 Versione leggera di kubernetes con poco overhead.
 ## Architettura:
+![image](../assets/how-it-works-k3s-revised.svg)
+Architettura completa: 
+
+Elementi fondamentali: ``` k3s server``` e ``` k3s agent```
+
+![image](../assets/k3s-architecture-ha-embedded-dark.svg)
+
+
+
 ### k3s Server
 equivalente al Control Plane di Kubernetes, crea un processo con **SQLite DB**
-
-Ha un tunnel proxy per comunicare con ...
 
 ### k3s Agent
 Esegue i container sui nodi worker
@@ -52,8 +59,14 @@ curl -sfL https://get.k3s.io | K3S_URL="https://[MASTER_IP]:6443" K3S_TOKEN="<TO
 kubectl get nodes                   # visualizza nodi attivi
 ```
 
+Disposizione di server e agent: 
+```sh
+sudo k3s server
+sudo k3s kubectl get nodes
 
-
+# On a different node run the below. NODE_TOKEN comes from
+sudo k3s agent --server https://myserver:6443 --token ${NODE_TOKEN}
+```
 
 ## Fasi di Configurazione k3s
 
@@ -266,7 +279,7 @@ Ho scelto l'opzione 2:
 kubectl apply -f nginx-service.yaml
 kubectl get nodes -o wide    # Ottengo i nodi attivi
 ```
-- Aggiungo nel file /etc/hosts ``` 192.168.178.42  nginx.local``` -> sarebbe l'Ip del nodo (master)
+- Aggiungo nel file /etc/hosts ``` 192.168.178.42  nginx.local``` -> sarebbe l'Ip del nodo (master), simulo un DNS
 
 - Mi rendo conto che ora effettivamente il LoadBalancer sta distribuendo il carico sui vari pod. Eseguendo 
 ```sh
@@ -298,5 +311,13 @@ Events:
 ```
 
 ### 2. App custom in node.js: NodePort ( /node-app-kubernetes )
+Da implementare...
 
+# Riassunto comandi eseguiti
+
+- ```kubectl apply```: questi comandi applicano la configurazione YAML per il Deployment, il Service e l'Ingress, facendo in modo che Kubernetes crei le risorse specificate nel cluster.
+- ```kubectl get nodes```: mostra lo stato dei nodi del cluster.
+- ```kubectl get pods```: mostri lo stato dei pod, che dovrebbero essere 3, poiché il deployment ha 3 repliche.
+- ```kubectl get deployments```: mostra i dettagli del deployment di Nginx.
+- ```kubectl get services```: mostri lo stato del servizio, che dovrebbe essere configurato come tipo LoadBalancer.
 
