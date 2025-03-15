@@ -1,0 +1,10 @@
+apiVersion: crossplane.io/v1
+kind: ProviderConfig
+metadata:
+  name: local-kubernetes-provider
+spec:
+  kubeconfig:
+    secretRef:
+      name: kubeconfig-secret
+      namespace: crossplane-system
+      key: kubeconfig

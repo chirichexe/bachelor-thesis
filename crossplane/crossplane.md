@@ -1,16 +1,36 @@
 # CROSSPLANE
-Crossplane è un'estensione open-source per Kubernetes che permette al tuo cluster di supportare il provisioning e la gestione di infrastrutture cloud, servizi e applicazioni. Consente ai team di piattaforma di definire e offrire API per l'infrastruttura in modalità self-service ai team di sviluppo, sfruttando strumenti e pratiche nativi di Kubernetes.
+Crossplane è un'estensione open-source per Kubernetes che permette al cluster di supportare il provisioning e la gestione di infrastrutture cloud, trasformando il cluster in uno **universal control plane** , ovvero il controllo continuo che la propria risorsa esista e funzioni come desiderati. È quello che faceva anche Kubernetes, ma in questo caso viene esteso a tutte le risorse.
+
+Qualsiasi risorsa che usa un API è messa sotto lo stesso tetto
+
+Consente ai team di piattaforma di definire e offrire API per l'infrastruttura in modalità self-service ai team di sviluppo, sfruttando strumenti e pratiche nativi di Kubernetes.
 
 ## Funzionalità chiave
 
 - **Infrastructure as Code (IaC)**: Definisci e gestisci l'infrastruttura utilizzando manifest Kubernetes.
 - **Modularità**: Definisci e gestisci l'infrastruttura utilizzando manifest Kubernetes.
 - **Estendibilità**: Estendi Crossplane con Custom Resource Definitions (CRD) e controller personalizzati.
-- **Multi-Cloud**:  Gestisci risorse su più provider cloud da un unico control plane..
+- **Multi-Cloud**:  Gestisci risorse su più provider cloud da un unico control plane universale.
 
-Tutto ciò che devo fare è applicare il manifest, dimenticarmi delle API
+Tutto ciò che devo fare è applicare il manifest, dimenticarmi delle API.
 
-## 
+## Installazione
+```sh
+helm install crossplane crossplane-stable/crossplane --namespace crossplane-system --create-namespace
+
+# Lo troverò poi disponibile con:
+kubectl get pods -n crossplane-system
+```
+
+Visualizzo i pod ```crossplane``` e ```crossplane-rbac-manager```.
+
+Crossplane ha un provider specifico per Kubernetes che permette di creare risorse Kubernetes dinamicamente. Per installarlo:
+## Componenti Crossplane
+
+![image](/assets/crossplane-components.png)
+
+## Custom Resource Definition
+Rappresentano la risorsa esterna come elemento nativo di Kubernetes.
 
 ## Comandi utilizzati
 
@@ -32,3 +52,4 @@ These commands help you manage Crossplane installations, providers, configuratio
 # Documentazione consultata
 - [official Crossplane documentation](https://crossplane.io/docs/).
 - https://www.youtube.com/watch?v=AtbS1u2j7po&list=PLyicRj904Z9_X62k6_XM_xlJkSyoQDkS2
+kubectl get pods -n crossplane-system
