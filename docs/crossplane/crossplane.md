@@ -39,13 +39,44 @@ Componenti crossplane
 I CRDs (Custom Resource Definition) Rappresentano la risorsa esterna come elemento nativo di Kubernetes, così da poter usare le classiche api ```kubectl create```, ```describe```...
 
 ### 1. Provider
+Un Provider comnnete Kubernetes a un servizio esterno. È responsabile della creazione e gestione del lifetime delle risorse esterne ad esso collegate, controllandole costantemente. 
 
-Poichè Crossplane non è gestito direttamente da kubectl, ma usa le API di Kubernetes per installare i provider, creo una risorsa **Provider** mediante il file [provider-kubernetes.yaml](./nginx-app-crossplane/provider-kubernetes.yaml), poi la applico.
-Ora Crossplane sa come interagire con il cluster Kubernetes.
+**Installare un provider**: 
+
+I provider hanno due tipi diversi di configurazione: **ControllerConfig** (deprecato) e **ProviderConfig**.
+
+#### Test con Nginx
+
+Creo una risorsa **Provider** mediante il file [provider-kubernetes.yaml](./nginx-app-crossplane/provider-kubernetes.yaml), poi la applico.
+Ora Crossplane sa come interagire con il cluster Kubernetes. 
+
+- Per ottenere i providers attivi: ```kubectl get providers```
+- Per debug, ad esempio se un Provider è bloccato: ```kubectl describe providerrevisions```
+- Eliminare: ```kubectl delete provider```
+
+### 1.1 DeploymentRuntimeConfigs
+Funzione beta, la analizzerò in seguito.
 
 ### 2. ProviderConfig
-Per dare l'accesso al cluster locale
+Determina le impostazioni che il Provider utilizza comunicando al Provider esterno. Caso d'uso: configurare le credenziali per accedere a un servizio esterno.
 
+Esempio di ProviderConfig per AWS:
+```sh
+apiVersion: aws.crossplane.io/v1beta1
+kind: ProviderConfig
+metadata:
+  name: user-keys
+spec:
+  credentials:
+    source: Secret
+    secretRef:
+      namespace: crossplane-system
+      name: my-key
+      key: secret-key
+
+```
+
+#### Test con Nginx
 ```sh
 # Creo un service account per crossplane e gli do i permessi di cluster-admin 
 
@@ -67,32 +98,17 @@ kubectl create secret generic crossplane-admin-secret -n crossplane-system \
 ```
 Poi applico il provider-config.
 
+<!--
 ### 3. Creazione manifest
 
 Creo il file [nginx-deployment-crossplane.yaml](./nginx-app-crossplane/nginx-deployment-crossplane.yaml), che rappresenta il deployment di nginx, e lo applico.
+!-->
 
+# 3. Managed Resources
 
-
-
-
-## Comandi utilizzati
-
-Crossplane provides a command-line interface (CLI) to interact with and manage Crossplane resources. Below are some of the key CLI commands and their meanings:
-
-- **`kubectl crossplane install`**: Installs Crossplane into your Kubernetes cluster.
-- **`kubectl crossplane uninstall`**: Uninstalls Crossplane from your Kubernetes cluster.
-- **`kubectl crossplane provider install <provider>`**: Installs a specific cloud provider into Crossplane.
-- **`kubectl crossplane provider uninstall <provider>`**: Uninstalls a specific cloud provider from Crossplane.
-- **`kubectl crossplane configuration package install <package>`**: Installs a configuration package into Crossplane.
-- **`kubectl crossplane configuration package uninstall <package>`**: Uninstalls a configuration package from Crossplane.
-- **`kubectl crossplane composition create -f <file>`**: Creates a new composition from a YAML file.
-- **`kubectl crossplane composition delete <name>`**: Deletes an existing composition by name.
-- **`kubectl crossplane resource claim create -f <file>`**: Creates a new resource claim from a YAML file.
-- **`kubectl crossplane resource claim delete <name>`**: Deletes an existing resource claim by name.
-
-These commands help you manage Crossplane installations, providers, configurations, compositions, and resource claims efficiently.
+Rappresenta un servizio esterno in un Provider. Quando ne creiamo una, 
+> Meglio utilizzare un **CompositeResourceDefinition** per definire un servizio complesso, come un deployment.
 
 # Documentazione consultata
 - [official Crossplane documentation](https://crossplane.io/docs/).
 - https://www.youtube.com/watch?v=AtbS1u2j7po&list=PLyicRj904Z9_X62k6_XM_xlJkSyoQDkS2
-kubectl get pods -n crossplane-system

@@ -24,7 +24,7 @@ Creare una "facciata" che permetta di aggiornare il codice legacy (?)
 ## Benefici e rischi
 Benefits:
 Fault isolation
-Open source :)
+Open source
 Deploy veloce and easy scaling
 
 Rischi: 
