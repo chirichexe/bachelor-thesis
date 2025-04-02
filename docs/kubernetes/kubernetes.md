@@ -16,42 +16,127 @@ Struttura principale: [ Cluster [ Node [ Pod ] ] ]
 
 # K3S (versione consigliata dal professore per IoT)
 Versione leggera di kubernetes con poco overhead.
-## Architettura:
-![image](../assets/how-it-works-k3s-revised.svg)
-Architettura completa: 
+- Distribuzione compatta: fornita come un singolo file binario o un'immagine container minimale.
+- Archiviazione integrata: utilizza SQLite3 come backend predefinito, con supporto per etcd3, MySQL e PostgreSQL.
+- Facilità di gestione: include un launcher che semplifica la configurazione di TLS e opzioni.
+- Sicurezza predefinita: impostazioni sicure per ambienti leggeri.
+- Gestione semplificata: l'intero piano di controllo di Kubernetes è eseguito in un unico processo, automatizzando operazioni complesse.
+- Minime dipendenze esterne: richiede solo un kernel moderno e i cgroup montati.
+- Componenti inclusi per una configurazione pronta all'uso:
+	- containerd / cri-dockerd (runtime container)
+    - Flannel (rete CNI)
+    - CoreDNS (DNS del cluster)
+    - Traefik (Ingress Controller)
+    - ServiceLB (bilanciamento del carico)
+    - Kube-router (policy di rete)
+    - Local-path-provisioner (gestione storage locale)
+    - Spegel (mirror distribuito per immagini container)
+    - Strumenti di sistema (iptables, socat, ecc.)
 
-Elementi fondamentali: ``` k3s server``` e ``` k3s agent```
+# Architettura di K3S:
+## Server e agent
+- ``` k3s server```: equivalente al Control Plane di Kubernetes, è il nodo che gestisce il cluster. Di solito assegna i pod ai nodi
 
-![image](../assets/k3s-architecture-ha-embedded-dark.svg)
+  - API Server → riceve le richieste da kubectl e dal controller.
 
+  - Controller Manager → mantiene lo stato desiderato del cluster.
 
+  - Scheduler → assegna i Pod ai nodi disponibili.
 
-### k3s Server
-equivalente al Control Plane di Kubernetes, crea un processo con **SQLite DB**
+  - Embedded SQLite (o altro DB) → K3s usa SQLite invece di etcd per la persistenza dei dati, riducendo il consumo di risorse.
 
-### k3s Agent
-Esegue i container sui nodi worker
-- c'è un kublet che comunica con ...
+- ``` k3s agent```: è un host che esegue senza controlpane e datastore, si connette al server per ricevere istruzioni.
+
+In entrambi:
+- c'è un kublet che comunica con i il containerd
 - containerd utilizzato al _posto di docker_ per gestire dei Pod[1 ... N]
+ 
+![image](../../assets/how-it-works-k3s-revised.svg)
 
-## API k3s
-L'API sever espone una REST API
+**fasi di registrazione dei nodi agent**:
+1. **Connessione al server node:**
+	
+	L'agente si connette al supervisore (e al kube-apiserver) attraverso un bilanciatore locale sulla porta 6443.
+	Il bilanciatore mantiene una lista di endpoint disponibili, inizialmente contenente solo l'indirizzo specificato con --server.
+2. **Recupero degli endpoint del cluster**:
 
-Il "desired state" è espresso tramite un file YAML
+    Dopo la connessione iniziale, l'agente ottiene l'elenco degli indirizzi dei kube-apiserver dal servizio Kubernetes nel namespace predefinito.
 
-Il CLI () di kubernetes è chiamato kubectl comunica con l'API server e le sue informazioni di connessione
-sono nella cartella ```~/.kube/config``` 
+    Questi endpoint vengono aggiunti al bilanciatore, le connessioni sono tolleranti a guasti di singoli server.
 
-Il "contesto" è un grupo di parametri di accesso a un cluster k3s. 
-Contiene un cluster k3s, utente e un namespace.
+3. **Autenticazione del nodo:**
+
+    L'agente si registra al server usando un segreto del cluster e una password generata casualmente, salvata in ```/etc/rancher/node/password```.
+
+    Il server memorizza queste password come segreti Kubernetes nel namespace kube-system, con il formato ```<hostname>.node-password.k3s```.
+
+4. **Rimozione e riaggiunta di un nodo:**
+
+    Se la directory ```/etc/rancher/node``` viene eliminata o se un nodo deve essere reintegrato con lo stesso nome, prima deve essere rimosso dal cluster.
+
+    La rimozione pulisce l'entry del nodo e il relativo segreto, permettendo la sua nuova registrazione.
+
+5. **Riutilizzo di nomi host:**
+
+    Se si riutilizzano frequentemente gli stessi nomi host ma non è possibile eliminare i segreti delle password dei nodi, si può usare il flag ```--with-node-id```.
+
+    Questo flag aggiunge automaticamente un ID univoco al nome host, memorizzandolo in ```/etc/rancher/node/```.
+
+## Sestup single-server con DB
+
+Ogni agent node è registrato sullo stesso server node. Un utente puà effettuare chiamate
+API sul server node per gestire le risorse
+
+![image](../../assets/k3s-architecture-single-server-dark.svg)
+
+## High-Availability K3s
+
+Architettura simile, ma tra l'user e il server c'è un **Load Balancer**.
+- I server node ( 3 o più) servono le API kubernetes ed eseguono altri servizi come il control-plane.
+- Un datastore interno come etcd o esterno comes postgre, SQLite è usato per la persistenza dei dati.
+![image](../../assets/k3s-architecture-ha-embedded-dark.svg)
+
+## Fixed Registration Adress per agent nodes
+
+Dopo la registrazione con il nodo agent, stabilisce una connessione direttamente con uno dei server node.
+
+![image](../../assets/k3s-production-setup-dark.svg)
+
+# Installazione locale e su più nodi di k3s
+## Requisiti
+- Server: 2 core CPU, 2 GB RAM (con 4GB di ram supporta fino a 350 agent, nodi server (HA) aumentano la capacità del 50%)
+- Agent: 1 core CPU, 512 MB RAM
+- Disco: Preferibile SSD per prestazioni ottimali (evitare SD card o eMMC su Raspberry Pi)
+
+Architettura e OS Supportati
+ -Supporta x86_64, ARMHF, ARM64/AARCH64
+- Funziona su Linux, con alcuni setup aggiuntivi per SUSE, RHEL, Fedora, Ubuntu, Debian e Raspberry Pi OS
+
+**Configurazione**
+- Hostname univoco per ogni nodo (usare ```--with-node-id``` se riutilizzati)
+- Cgroups attivi su Raspberry Pi (aggiungere ```cgroup_memory=1 cgroup_enable=memory``` a ```/boot/cmdline.txt```)
+- Su Ubuntu (21.10-23.10), installare ```linux-modules-extra-raspi``` per supporto VXLAN
+
+**Networking**
+
+- Porta ```6443```: accessibile da tutti i nodi per API Kubernetes
+- Porta ```8472``` (UDP): richiesta per Flannel VXLAN
+- Porta ```10250``` (TCP): necessaria per il metrics server
+- Porta ```2379-2380``` (TCP): richiesta solo per HA con embedded etcd
+- Proteggere la porta ```VXLAN``` (8472) con un firewall per evitare attacchi alla rete del cluster
+
+> Nota: Per cluster grandi, aumentare la subnet del Cluster CIDR (```--cluster-cidr```) per non esaurire IP.
 
 
-## Installazione locale e su più nodi di k3s
 
+## API
+**Cluster signolo nodo**
 ```sh
-curl -sfL https://get.k3s.io | sh - # installa in locale
 
-# Per creare un cluster multi-nodo, i nodi worker devono connettersi al master.
+curl -sfL https://get.k3s.io | sh - # installa in locale
+# INSTALL_K3S_EXEC="server --flannel-backend none" K3S_TOKEN=12345 sh -s - # con variabili d'ambiente
+
+# Per creare un cluster multi-nodo, i nodi devono connettersi al master.
 
 sudo cat /var/lib/rancher/k3s/server/node-token       # visualizza il token
 curl -sfL https://get.k3s.io | K3S_URL="https://[MASTER_IP]:6443" K3S_TOKEN="<TOKEN>" sh -
@@ -66,6 +151,18 @@ sudo k3s kubectl get nodes
 
 # On a different node run the below. NODE_TOKEN comes from
 sudo k3s agent --server https://myserver:6443 --token ${NODE_TOKEN}
+## API k3s
+L'API sever espone una REST API
+
+Il "desired state" è espresso tramite un file YAML
+
+Il CLI () di kubernetes è chiamato kubectl comunica con l'API server e le sue informazioni di connessione
+sono nella cartella ```~/.kube/config``` 
+
+Il "contesto" è un grupo di parametri di accesso a un cluster k3s. 
+Contiene un cluster k3s, utente e un namespace.
+
+
 ```
 
 ## Fasi di Configurazione k3s

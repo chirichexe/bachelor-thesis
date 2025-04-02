@@ -1,0 +1,14 @@
+apiVersion: iot.example.com/v1
+kind: IoTDevice
+metadata:
+  name: device-test
+  namespace: iot-devices
+spec:
+  ip: "192.168.1.10"
+  status: "available"
+  lastStatusChange: "2025-04-01T12:00:00Z"
+  capabilities:
+    - "sensore-umidità"
+    - "gps"
+  lastSeen: "2025-04-01T12:05:00Z"
+  expirationTime: "2025-04-10T12:00:00Z"

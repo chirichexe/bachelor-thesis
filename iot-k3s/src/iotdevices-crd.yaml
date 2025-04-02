@@ -1,0 +1,46 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: iotdevices.iot.example.com  
+spec:
+  group: iot.example.com
+  versions:
+    - name: v1
+      served: true
+      storage: true
+      schema:
+
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+
+# Proprietà dell'oggetto IoT  
+              properties:
+                ip:
+                  type: string
+                status:
+                  type: string
+                  enum: ["available", "assigned", "offline", "errored"]
+                lastStatusChange:
+                  type: string
+                  format: date-time
+                capabilities:
+                  type: array
+                  items:
+                    type: string
+                lastSeen: # indica l'ultima volta che il dispositivo ha comunicato con il sistema
+                  type: string
+                  format: date-time
+                expirationTime:
+                  type: string
+                  format: date-time
+
+  scope: Namespaced   # ciò significa che ogni dispositivo esiste all'interno di un namespace specifico
+  names:
+    plural: iotdevices
+    singular: iotdevice
+    kind: IoTDevice
+    shortNames:
+      - iotd
