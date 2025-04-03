@@ -9,6 +9,5 @@ spec:
   lastStatusChange: "2025-04-01T12:00:00Z"
   capabilities:
     - "sensore-umidità"
-    - "gps"
   lastSeen: "2025-04-01T12:05:00Z"
   expirationTime: "2025-04-10T12:00:00Z"

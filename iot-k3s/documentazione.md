@@ -1,6 +1,8 @@
 # Progetto k3s - IoT
 
 Il progetto ha come sfida principale il Provisioning dinamico di Workload su dispositivi IoT, utilizzando Crossplane e operatori Kubernetes. La creazione di due controller: 
+
+
 <!--- **Controller 1: Deployment di Workload su dispositivi IoT**!--->
 - **Controller 2: Un admin gestisce un pool di dispositivi IoT da assegnare a un namespace**
 
@@ -37,4 +39,24 @@ Aggiornamento tramite kubectl
 
 Cambio lo stato ad "assigned"
 
-3. Creazione di un claim per richiedere un dispositivo IoT
+. Creazione del controller in python, che segue i tre passaggi: 1. Watch, 2. Analyze, 3. Act. Il controller è in grado di gestire i dispositivi IoT e di assegnarli a un namespace.
+
+```sh
+docker build -t myrepo/iot-controller:latest .
+docker push myrepo/iot-controller:latest
+```
+
+3. Sviluppo del controller in Go. Esso verrà eseguito nei pod all'interno del cluster. Ogni pod avrà un container che eseguirà il controller. Il controller è responsabile della gestione dei dispositivi IoT e della loro assegnazione a un namespace specifico. Utilizza le API di Kubernetes per interagire con il cluster e monitorare lo stato dei dispositivi.
+
+4. Utilizzo di crossplane per
+- Creare composizioni che definiscono come un dispositivo iot deve essere configurato  nel cluster.
+
+- Quando un utente richiede un dispositivo, Crossplane avvia automaticamente il suo provisioning. (es. se diventa errored, ne assegna un altro, se diventa offline avvia una procedura di riavvio o sostituzione).
+
+- Riassegnazione automatica dei dispositivi inattivi e allocazione automatica delle risorse (se quelli attivi sono pochi, Crossplane ne crea di nuovi o libera quelli inattivi).
+
+Cosa deve fare l'admin:
+- Stabilire le regole di gestione
+
+Cosa deve fare l'user
+- Possibilità di claim di un dispositivo 

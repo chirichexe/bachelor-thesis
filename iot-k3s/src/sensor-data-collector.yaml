@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sensor-data-collector
+  namespace: iot-devices
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: collector
+  template:
+    metadata:
+      labels:
+        app: collector
+    spec:
+      containers:
+        - name: collector
+          image: myrepo/sensor-collector:latest
+          env:
+            - name: MQTT_BROKER
+              value: "mqtt-server.iot-devices.svc.cluster.local"
