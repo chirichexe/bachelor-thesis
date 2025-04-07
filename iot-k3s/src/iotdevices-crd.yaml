@@ -2,7 +2,8 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   name: iotdevices.iot.example.com  
-spec:
+
+spec: # definisce lo stato desiderato
   group: iot.example.com
   versions:
     - name: v1

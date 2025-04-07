@@ -2,7 +2,6 @@ apiVersion: iot.example.com/v1
 kind: IoTDevice
 metadata:
   name: device-test
-  namespace: iot-devices
 spec:
   ip: "192.168.1.10"
   status: "available"

@@ -1,0 +1,7 @@
+apiVersion: iot.example.com/v1alpha1
+kind: CompositeIoTDevice
+metadata:
+  name: sensor-01
+spec:
+  ip: "192.168.1.20"
+  lastSeen: "2025-04-02T14:00:00Z"
