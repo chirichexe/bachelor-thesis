@@ -60,3 +60,4 @@ Cosa deve fare l'admin:
 
 Cosa deve fare l'user
 - Possibilità di claim di un dispositivo 
+

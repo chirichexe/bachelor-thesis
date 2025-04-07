@@ -114,7 +114,7 @@ Creo il file [nginx-deployment-crossplane.yaml](./nginx-app-crossplane/nginx-dep
 ### 3. Managed Resources
 
 Rappresenta un servizio esterno in un Provider [...](https://docs.crossplane.io/v1.19/concepts/managed-resources/)
-> Meglio utilizzare un **CompositeResourceDefinition** per definire un servizio complesso, come un deployment.
+> Meglio utilizzare un **CompositeResourceDefinition** per definire un servizio complesso.
 
 ### 4. Composition
 
