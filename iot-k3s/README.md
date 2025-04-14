@@ -5,7 +5,18 @@ Il progetto ha come sfida principale il Provisioning dinamico di Workload su dis
 ## Architettura
 1. Creazione di una macchina virtuale Vagrant per il nodo master del k3s e di una per il nodo worker. Ho utilizzato IP statici per facilitare la comunicazione tra essi.
 
-3. Creazione di un namespace **iotdevices** per i dispositivi IoT e definizone di una **CustomResourceDefinition** per descrivere i dispositivi IoT. I parametri principali sono:
+2. Creazione di un namespace **iotdevices** per i dispositivi IoT 
+
+3. Creazione di un'immagine docker per i pod di lavoro, che contengono un'applicazione (per ora test) in Go per la gestione dei dispositivi IoT. L'immagine è stata creata con Dockerfile e successivamente caricata su un repository Docker tramite i comandi:
+
+```sh
+GOOS=linux GOARCH=amd64 go build -o main . # compilazione dell'app
+
+docker build -t chirichexe/device-agent:latest .
+docker push chirichexe/device-agent:latest
+```
+
+4. Definizone di una **CustomResourceDefinition** per descrivere i dispositivi IoT. I parametri principali sono:
 
 - **ip**: un campo stringa per l'indirizzo IP.
 - **status**: uno stato che può essere "available", "assigned", "offline" o "errored".
@@ -15,6 +26,24 @@ Il progetto ha come sfida principale il Provisioning dinamico di Workload su dis
 - **lastSeen**: la data e ora dell’ultimo contatto con il sistema.
 - **expirationTime**: la data e ora in cui il dispositivo scadrà o non sarà più considerato valido.
 [...]
+
+5. Definizione di un Deployment statico che crea due pod che eseguono l'immagine Docker.
+
+```sh
+kubectl rollout restart deployment iot-devices-deployment # per riavviare il deployment
+```
+
+6. Definizione di un Service di Kubernetes, ( ovvero un'astrazione per esporre i Pod nella rete ) 
+
+Comandi utili:
+```sh
+kubectl get pods -l app=iot-device -o wide
+kubectl get svc iot-device-service
+kubectl get nodes -o wide
+
+kubectl exec -it <nome-pod> -- sh
+
+```
 
 4. Creazione di un API Rest per esporre funzionalità di:
 - **registrazione** di un dispositivo IoT.

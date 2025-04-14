@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: iot-device-service
+  namespace: iot-devices
+spec:
+  type: NodePort # espone il servizio su tutte le interfacce IP del nodo, 
+  # mappa una porta specifica del nodo verso una porta interna del container
+  selector:
+    app: iot-device
+  ports:
+    - protocol: TCP
+      port: 80         # porta del servizio
+      targetPort: 8080 # porta del container a cui girare il traffico
+      nodePort: 30085  # porta accessibile da fuori (es. http://<node-ip>:30080)

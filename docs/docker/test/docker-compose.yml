@@ -1,0 +1,13 @@
+services:
+  node-container: # servizio, nome del container
+    image: node-compose-container # immagine del container
+    build: 
+      context: node_container # cartella dove si trova il dockerfile
+      dockerfile: ./Dockerfile 
+    environment:
+      NODE_ENV: production
+    ports:
+      - "3000:3000" # porta del container
+    # command: ["node", "app.js"] # comando da eseguire all'avvio del container
+    # non necessario poichè c'è un comando di default nel Dockerfile
+

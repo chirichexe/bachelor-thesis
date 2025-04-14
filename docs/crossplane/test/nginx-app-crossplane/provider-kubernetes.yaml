@@ -1,0 +1,18 @@
+apiVersion: pkg.crossplane.io/v1
+kind: Provider
+metadata:
+  name: provider-kubernetes
+spec:
+  package: xpkg.upbound.io/crossplane-contrib/provider-kubernetes:v0.10.0 
+  # packagePullPolicy: IfNotPresent - (default) Scarica il pacchetto solo se non è già presente nel cache.
+  #                    Always       - Controlla sempre se è disponibile una nuova versione del pacchetto.
+  #                    Never        - Non scaricare mai il pacchetto.
+
+  # revisionHistoryLimit: 0         - (default) Numero massimo di revisioni da mantenere per l'oggetto.
+
+  # packagePullSecrets:             - Lista di segreti da utilizzare per autenticazione dovuta a installazioni
+  #   - name: example-secret        di immagini private.
+
+  # skipDependencyResolution: false   - (default) Se true, non risolvere le dipendenze del pacchetto.
+
+  # ignoreCrossplaneConstraints:false - (default) Se true, ignora i vincoli di versione di Crossplane.

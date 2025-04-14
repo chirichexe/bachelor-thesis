@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: iot-devices-deployment
+  namespace: iot-devices
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: iot-device # il deployment controllerà i pod con questa etichetta
+  template:
+    metadata:
+      labels:
+        app: iot-device
+    spec:
+      containers:
+        - name: iot-device-container
+          image: chirichexe/device-agent:latest
+          ports:
+            - containerPort: 8081 # espone la porta 8081 del container
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "250m"
+            limits:
+              memory: "128Mi"
+              cpu: "500m"
+          env:
+            - name: DEVICE_NAME
+              value: "device_name_test"
+            - name: "PORT"
+              value: "8081"

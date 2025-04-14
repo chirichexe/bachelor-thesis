@@ -169,7 +169,7 @@ Contiene un cluster k3s, utente e un namespace.
 
 ### 1. Deployment
 Un Deployment è una risorsa che gestisce il lifecycle di uno o più Pod in Kubernetes. Permette di:
-- Creare e aggiornare gruppi di Pod.
+- Creare e aggiornare gruppi di Pod (gruppi di container che vengono eseguiti insieme).
 - Gestire il numero di repliche (scalabilità).
 - Assicurare che l’applicazione sia sempre disponibile.
 - Fare rollback a una versione precedente se necessario.
@@ -210,8 +210,12 @@ spec:
 ### 2. Service
 #### Tipi di Servizi in Kubernetes
 
-In Kubernetes, un **Service** è un'astrazione che espone un'applicazione in esecuzione su un insieme di **Pod**, fornendo un punto di accesso stabile.  
-Esistono diversi tipi di Service, ognuno con un uso specifico.
+I services hanno due obiettivi principali: accoppiamento debole e separazione interno - esterno del cluster. Funziona come un “proxy” che smista il traffico verso i Pod giusti.
+
+Nel cluster, ogni Pod ha un ip interno, ma ricordiamo che sono "effimeri", ossia possono cambiare ogni volta che il Pod viene riavviato. Il Service permette di avere una stabilità di Ip. 
+
+Il service permette anche Load Balancing, ovvero di distribuire il carico tra più Pod.
+In Kubernetes, un **Service** è quindi un'astrazione che espone un'applicazione in esecuzione su un insieme di **Pod**, fornendo un punto di accesso stabile.  
 
 ---
 
@@ -221,6 +225,8 @@ Rende il servizio accessibile **solo all'interno del cluster**, assegnando un IP
 
 - **Quando usarlo?**  
 Quando un'app deve essere accessibile solo da altri pod nel cluster (es. microservizi interni).
+> Es. Abbiamo tre nodi, ognuno ha un pod che esegue un'applicazione in un container, uno per il frontend e uno per il backend. Se devono
+> comunicare tra loro, usano il ClusterIP.
 
 ```yaml
 apiVersion: v1
@@ -229,19 +235,36 @@ metadata:
   name: my-service
 spec:
   selector:
-    app: my-app
+    app: my-app # nel deployment, è il "selector" che identifica i pod. 
+                # Serve al service per capire dove indirizzare il traffico
   ports:
     - protocol: TCP
-      port: 80
-      targetPort: 8080
+      port: 80         # porta esposta dal service, su cui “ascolta”
+      targetPort: 8080 # porta esposta dal container all’interno del Pod 
 ```
+
+L'Ingress sarà configurato così:
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: my-app-ingress  
+spec:
+  rules: ... 
+    servicePort: 80
+```
+
+[!image](../../assets/Screenshot%20from%202025-04-14%2019-51-42.png)
+
+[!image](../../assets/Screenshot%20from%202025-04-14%2019-56-04.png)
 
 2. **NodePort**
 - **Cos'è?**  
 Espone il servizio su una porta fissa di ogni nodo, rendendolo accessibile dall'esterno tramite [NodeIP]:[NodePort]. 
 
 - **Quando usarlo?**  
-Testare un accesso esterno senza un bilanciatore di carico.
+Testare un accesso esterno senza un bilanciatore di carico, per piccoli cluste.
 
 ```yaml
 apiVersion: v1
@@ -254,39 +277,10 @@ spec:
     app: my-app
   ports:
     - protocol: TCP
-      port: 80
-      targetPort: 8080
-      nodePort: 30007  # Deve essere tra 30000 e 32767
+      port: 80  # porta del Service (es. 80), utile se vuoi farlo usare da altri Pod
+      targetPort: 8080 # porta del container
+      nodePort: 30007  # Esposta all'esterno su ogni nodo del cluster. Deve essere tra 30000 e 32767
 ```
-
-- Per poter esporre un pod all'esterno devo creare un service. I Pod, infatti, hanno un IP volatile, quindi se uno viene riavviato cambia IP e l’applicazione potrebbe non trovarlo più.
-
-3. **LoadBalancer**
-- **Cos'è?**  
-Crea un IP pubblico e un bilanciatore di carico esterno per instradare il traffico ai pod interni. (Richiede un provider cloud o MetalLB per ambienti on-prem).
-- **Quando usarlo?**  
-Se vuoi esporre un servizio su internet con un IP pubblico e bilanciamento del carico.
-
-```yaml
-apiVersion: v1
-kind: Service
-metadata:
-  name: my-service
-spec:
-  type: LoadBalancer
-  selector:
-    app: my-app
-  ports:
-    - protocol: TCP
-      port: 80
-      targetPort: 8080
-```
-
-4. **ExternalName - 5. HeadlessService**
-Il 4. reindirizza il traffico a un nome di dominio esterno, il 5. Non assegna un IP al servizio, ma restituisce direttamente gli indirizzi IP dei pod.
-
-- Per poter esporre un pod all'esterno devo creare un service. I Pod, infatti, hanno un IP volatile, quindi se uno viene riavviato cambia IP e l’applicazione potrebbe non trovarlo più.
-
 #### Esempio con NodePort
 Rendo il servizio disponibile nella mia sottorete
 ```yaml
@@ -305,14 +299,43 @@ spec:
   type: NodePort
 
 ```
+
+3. **LoadBalancer**
+- **Cos'è?**  
+Crea un IP pubblico e un bilanciatore di carico esterno per instradare il traffico ai pod interni. (Richiede un provider cloud o MetalLB per ambienti on-prem).
+
+- **Quando usarlo?**  
+Se vuoi esporre un servizio su internet con un IP pubblico e bilanciamento del carico.
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-service
+spec:
+  type: LoadBalancer
+  selector:
+    app: my-app
+  ports:
+    - protocol: TCP
+      port: 80 # porta pubblica
+      targetPort: 8080 # porta container
+
+```
+
+4. **ExternalName - 5. HeadlessService**
+Il 4. reindirizza il traffico a un nome di dominio esterno, il 5. Non assegna un IP al servizio, ma restituisce direttamente gli indirizzi IP dei pod.
+
+- Per poter esporre un pod all'esterno devo creare un service. I Pod, infatti, hanno un IP volatile, quindi se uno viene riavviato cambia IP e l’applicazione potrebbe non trovarlo più.
+
 Per visualizzare il servizio tra altre macchine, eseguo ```ip a``` e noto che il mio Ip Pubblico è ```inet 192.168.178.42/24 brd 192.168.178.255 scope global dynamic noprefixroute wlo1```.
 Perciò alla porta 30080 di quell'indirizzo trovo la pagina che ho hostato. Vale però solo per la mia **Sottorete**.
 
 ### 3. Ingress
 Se hai più servizi e vuoi gestirli con un unico punto di accesso, usi un Ingress. Serve un Ingress Controller gestire il routing del traffico HTTP/HTTPS in modo più sofisticato.
 Nel caso di un Ingress, generalmente il Service sarà di tipo ClusterIP (accessibile solo dentro il cluster) e si occupa di indirizzare il traffico ai pod corretti in base al nome e alla porta.
-- Definzione regole: Definisci regole che stabiliscono quali percorsi (URL) devono essere indirizzati a quale Service.
-- Indirizzamento tramite hostname: puoi definire il dominio (ad esempio, myapp.local) e quali percorsi (es. /api, /docs) devono essere inviati a ciascun servizio.
+- Definzione regole che stabiliscono quali percorsi (URL) devono essere indirizzati a quale Service.
+- Indirizzamento tramite hostname, ovvero la possibilità di definire il dominio (ad esempio, myapp.local) e quali percorsi (es. /api, /docs) devono essere inviati a ciascun servizio.
 - Configurazione dell'Ingress Controller
 
 ```yaml
@@ -410,14 +433,15 @@ Events:
 ### 2. App custom in node.js: NodePort ( /node-app-kubernetes )
 Da implementare...
 
-# Riassunto comandi eseguiti
+# Riassunto comandi utili
 
-- ```kubectl apply```: questi comandi applicano la configurazione YAML per il Deployment, il Service e l'Ingress, facendo in modo che Kubernetes crei le risorse specificate nel cluster.
+- ```kubectl apply -f <risorsa>```: applica la configurazione YAML
 - ```kubectl get nodes```: mostra lo stato dei nodi del cluster.
-- ```kubectl get pods```: mostri lo stato dei pod, che dovrebbero essere 3, poiché il deployment ha 3 repliche.
-- ```kubectl get deployments```: mostra i dettagli del deployment di Nginx.
-- ```kubectl get services```: mostri lo stato del servizio, che dovrebbe essere configurato come tipo LoadBalancer.
+- ```kubectl get pods```: mostri lo stato dei pod
+- ```kubectl get deployments```: mostra i dettagli del deployment
+- ```kubectl get services```: mostri lo stato del servizio
 
 # Documentazione consultata
 - [Corso di rancher academy](https://www.rancher.academy/courses/take/k3s-basics/lessons/47407227-introduction-lesson)
 - https://www.youtube.com/watch?v=1hwGdey7iUU
+- https://www.youtube.com/watch?v=T4Z7visMM4E

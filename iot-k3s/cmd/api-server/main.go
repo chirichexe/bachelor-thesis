@@ -34,9 +34,11 @@ func main() {
 
 	r := gin.Default()
 
+	/*API esposte *******************************************/
 	r.POST("/iotdevices", registerDevice)
 	r.DELETE("/iotdevices/:name", deregisterDevice)
 
+	/* Server in ascolto ************************************/
 	r.Run(":8080")
 }
 
@@ -106,6 +108,9 @@ func deregisterDevice(c *gin.Context) {
 }
 
 /*
+
+// Esempio di richiesta per registrare un dispositivo
+
 curl -X POST http://localhost:8080/iotdevices \
   -H "Content-Type: application/json" \
   -d '{

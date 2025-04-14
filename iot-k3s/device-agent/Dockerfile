@@ -1,4 +1,3 @@
-# Usa un'immagine Go per compilare il binario
 FROM golang:1.21 AS builder
 
 WORKDIR /app
@@ -11,5 +10,7 @@ FROM alpine:latest
 
 WORKDIR /app
 COPY --from=builder /app/device-agent .
+
+EXPOSE 8080
 
 ENTRYPOINT ["./device-agent"]
