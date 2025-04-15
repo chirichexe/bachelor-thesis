@@ -7,7 +7,7 @@ Il progetto ha come sfida principale il Provisioning dinamico di Workload su dis
 
 2. Creazione di un namespace **iotdevices** per i dispositivi IoT 
 
-3. Creazione di un'immagine docker per i pod di lavoro, che contengono un'applicazione (per ora test) in Go per la gestione dei dispositivi IoT. L'immagine è stata creata con Dockerfile e successivamente caricata su un repository Docker tramite i comandi:
+3. Creazione di un'immagine docker per i pod di lavoro, che contengono un'applicazione (per ora test, lancia semplicemente il server http in una porta specifica) in Go per la gestione dei dispositivi IoT. L'immagine è stata creata con Dockerfile e successivamente caricata su un repository Docker tramite i comandi:
 
 ```sh
 GOOS=linux GOARCH=amd64 go build -o main . # compilazione dell'app
@@ -33,7 +33,7 @@ docker push chirichexe/device-agent:latest
 kubectl rollout restart deployment iot-devices-deployment # per riavviare il deployment
 ```
 
-6. Definizione di un Service di Kubernetes, ( ovvero un'astrazione per esporre i Pod nella rete ) 
+6. Definizione di un Service di Kubernetes, ( ovvero un'astrazione per esporre i Pod nella rete ), il cui scopo è mappare una porta del Pod a una porta del Service, in modo da esporre il servizio all'esterno. Il Service è di tipo NodePort, sarà quindi possibile accedere al servizio utilizzando l'IP del nodo e la porta del Service.
 
 Comandi utili:
 ```sh
@@ -45,12 +45,16 @@ kubectl exec -it <nome-pod> -- sh
 
 ```
 
-4. Creazione di un API Rest per esporre funzionalità di:
+7. Creazione di un API Rest per esporre funzionalità di:
 - **registrazione** di un dispositivo IoT.
 - **deregistrazione** di un dispositivo IoT.
 [...]
 
-5. Sviluppo dell'operatore Kubernetes
+8. Creazione di un XRD [...]
+
+## Work in progress ...
+
+Sviluppo dell'operatore Kubernetes
 
 l’Operatore sarà composto da due controller, ciascuno con responsabilità distinte:   
 - **Controller Dispositivo** (Workload Manager), l'obiettivo è di monitorare il carico e scalare autonomamente
@@ -67,7 +71,7 @@ l’Operatore sarà composto da due controller, ciascuno con responsabilità dis
     - Gestisce assegnazioni a namespace
     - Aggiorna lo stato dei dispositivi
 
-## Flow operativo
+### Flow operativo
 
 1. Admin registra dispositivo -> API crea CR IoTDevice
 2. Controller IoTDevice:
@@ -97,6 +101,7 @@ Elenco di comandi eseguibili:
 kubectl get iotdevices -n iot-devices # per avere una visione d'insieme.
 kubectl delete iotdevice <nome> -n iot-devices # eliminazione dispositivo dal namespace
 kubectl describe iotdevice <nome> -n iot-devices # per dettagli approfonditi.
+kubectl logs -n iot-devices iot-devices-deployment-<id> # per controllare i log del deployment.
 kubectl get events -n iot-devices # per monitorare gli eventi.
 kubectl get pods -n iot-devices e kubectl logs <pod> -n # iot-devices per controllare lo stato e i log dei workload connessi.
 ```

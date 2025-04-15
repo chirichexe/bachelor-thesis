@@ -10,6 +10,6 @@ spec:
     app: iot-device
   ports:
     - protocol: TCP
-      port: 80         # porta del servizio
-      targetPort: 8080 # porta del container a cui girare il traffico
-      nodePort: 30085  # porta accessibile da fuori (es. http://<node-ip>:30080)
+      port: 80         # Porta del Service interna al cluster
+      targetPort: 8081 # Porta su cui il Service gira il traffico
+      nodePort: 30085  # Porta accessibile dall'esterno (curl http://<node-ip>:30085)

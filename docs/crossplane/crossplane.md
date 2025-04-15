@@ -1,5 +1,5 @@
 # CROSSPLANE
-Crossplane è un'estensione open-source per Kubernetes che permette al cluster di supportare il provisioning e la gestione di infrastrutture cloud, trasformando il cluster in uno **universal control plane** , ovvero il controllo continuo che la propria risorsa esista e funzioni come desiderati. È quello che faceva anche Kubernetes, ma in questo caso viene esteso a tutte le risorse.
+Crossplane è un'estensione open-source per Kubernetes che permette al cluster di supportare il provisioning e la gestione di infrastrutture cloud, trasformando il cluster in uno **universal control plane** , ovvero il controllo continuo che la propria risorsa esista e funzioni come desiderato. È quello che faceva anche Kubernetes, ma in questo caso viene esteso a tutte le risorse.
 
 Qualsiasi risorsa che usa un API è messa sotto lo stesso tetto. Crossplane si comporta come un classico **Controller Kubernetes**, quindi se qualcosa modifica o elimina a risorsa esterna, Crossplane si occupa di riportare lo stato a quello desiderato tramite un **riconciliation loop**.
 

@@ -1,0 +1,55 @@
+# - Registra nel cluster una nuova risorsa: IoTDevice, visibile con kubectl get iotdevices.
+# - La risorsa rappresenta un "device astratto", non è ancora un Pod o Service.
+# - Lo schema della spec ti permette di decidere che parametri accettare (deviceName, port…).
+
+apiVersion: apiextensions.crossplane.io/v1
+kind: CompositeResourceDefinition
+metadata:
+  name: xiotdevices.iot.crossplane.io
+spec:
+  group: iot.crossplane.io
+  names:
+    kind: XIoTDevice
+    plural: xiotdevices
+    shortNames: [iotd]
+  claimNames:
+    kind: IoTDevice
+    plural: iotdevices
+  connectionSecretKeys:
+    - ip
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              required: ["deviceName", "port"]
+              properties:
+                deviceName:
+                  type: string
+                  description: Nome univoco del dispositivo IoT
+                port:
+                  type: integer
+                  description: Porta TCP del dispositivo
+                image:
+                  type: string
+                  default: chirichexe/device-agent:latest
+                  description: Immagine Docker del dispositivo
+            status:
+              type: object
+              properties:
+                ip:
+                  type: string
+                status:
+                  type: string
+                  enum: ["available", "assigned", "offline", "errored"]
+                lastSeen:
+                  type: string
+                  format: date-time
+                expirationTime:
+                  type: string
+                  format: date-time

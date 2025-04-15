@@ -1,0 +1,10 @@
+apiVersion: iot.crossplane.io/v1alpha1
+kind: IoTDevice
+metadata:
+  name: test-device-2
+  namespace: iot-devices
+spec:
+  deviceName: "test-2"
+  port: 8081
+  image: "chirichexe/device-agent:latest"
+

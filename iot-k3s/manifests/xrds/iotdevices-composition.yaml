@@ -1,0 +1,48 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: xiotdevice-basic
+  labels:
+    crossplane.io/xrd: xiotdevices.iot.crossplane.io
+spec:
+  compositeTypeRef:
+    apiVersion: iot.crossplane.io/v1alpha1
+    kind: XIoTDevice
+  resources:
+    - name: iot-deployment
+      base:
+        apiVersion: apps/v1
+        kind: Deployment
+        metadata:
+          labels:
+            app: iot-device
+        spec:
+          replicas: 1
+          selector:
+            matchLabels:
+              app: iot-device
+          template:
+            metadata:
+              labels:
+                app: iot-device
+            spec:
+              containers:
+                - name: device-agent
+                  image: chirichexe/device-agent:latest
+                  ports:
+                    - containerPort: 8081
+                  env:
+                    - name: DEVICE_NAME
+                      value: placeholder
+                    - name: PORT
+                      value: "8081"
+      patches:
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.deviceName"
+          toFieldPath: "spec.template.spec.containers[0].env[0].value"
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.port"
+          toFieldPath: "spec.template.spec.containers[0].env[1].value"
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.image"
+          toFieldPath: "spec.template.spec.containers[0].image"

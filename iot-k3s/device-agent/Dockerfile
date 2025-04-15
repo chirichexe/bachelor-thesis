@@ -3,7 +3,7 @@ FROM golang:1.21 AS builder
 WORKDIR /app
 COPY . .
 
-RUN go build -o device-agent main.go
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o device-agent main.go
 
 # Immagine finale
 FROM alpine:latest

@@ -3,10 +3,8 @@ package main
 import (
 	"fmt"
 	"log"
-	"net"
 	"net/http"
 	"os"
-	"time"
 )
 
 func main() {
@@ -20,36 +18,13 @@ func main() {
 		log.Fatal("PORT not set")
 	}
 
-	targetAddr := fmt.Sprintf("localhost:%s", targetPort)
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		msg := fmt.Sprintf("Il device \"%s\" è pronto", deviceName)
+		fmt.Fprintln(w, msg)
+		log.Println(msg)
+	})
 
-	// Avvia il server HTTP per la readiness probe
-	go func() {
-		http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-			msg := fmt.Sprintf("Sono il device %s", deviceName)
-			fmt.Fprintln(w, msg)
-			log.Println(msg)
-		})
-		log.Println("HTTP server listening on :8080")
-		log.Fatal(http.ListenAndServe(":8080", nil))
-	}()
-
-	// Loop per inviare dati mock via TCP
-	for {
-		conn, err := net.Dial("tcp", targetAddr)
-		if err != nil {
-			log.Printf("Connection error to %s: %v", targetAddr, err)
-			time.Sleep(5 * time.Second)
-			continue
-		}
-
-		msg := fmt.Sprintf("Device %s says hello at %s\n", deviceName, time.Now().Format(time.RFC3339))
-		_, err = conn.Write([]byte(msg))
-		if err != nil {
-			log.Printf("Send error: %v", err)
-		} else {
-			log.Printf("Sent to %s: %s", targetAddr, msg)
-		}
-		conn.Close()
-		time.Sleep(10 * time.Second)
-	}
+	addr := fmt.Sprintf(":%s", targetPort)
+	log.Printf("HTTP server listening on %s", addr)
+	log.Fatal(http.ListenAndServe(addr, nil))
 }
