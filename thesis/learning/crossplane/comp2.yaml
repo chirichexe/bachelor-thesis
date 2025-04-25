@@ -1,0 +1,39 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: docker-container
+  labels:
+    provider: kubernetes
+spec:
+  compositeTypeRef:
+    apiVersion: platform.example.com/v1alpha1
+    kind: XDockerContainer
+  resources:
+    - name: docker-pod
+      base:
+        apiVersion: v1
+        kind: Pod
+        metadata:
+          name: crossplane-docker-{{ .name }}
+        spec:
+          containers:
+            - name: main
+              image: "{{ .spec.parameters.image }}"
+              ports:
+                - containerPort: {{ .spec.parameters.port | default 80 }}
+              env:
+                {{- range $key, $value := .spec.parameters.envVars }}
+                - name: "{{ $key }}"
+                  value: "{{ $value }}"
+                {{- end }}
+              volumeMounts:
+                - name: docker-sock
+                  mountPath: /var/run/docker.sock
+          volumes:
+            - name: docker-sock
+              hostPath:
+                path: /var/run/docker.sock
+      patches:
+        - type: FromCompositeFieldPath
+          fromFieldPath: metadata.name
+          toFieldPath: metadata.name

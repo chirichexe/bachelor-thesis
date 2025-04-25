@@ -1,0 +1,6 @@
+apiVersion: myorg.io/v1alpha1
+kind: Experiment
+metadata:
+  name: davide-test
+spec:
+  namespaceName: davide-namespace

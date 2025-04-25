@@ -1,0 +1,42 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: docker-app-deployment
+spec:
+  compositeTypeRef:
+    apiVersion: example.org/v1alpha1
+    kind: XDockerApp
+  resources:
+    - name: docker-service
+      base:
+        apiVersion: docker.crossplane.io/v1beta1
+        kind: Service
+        spec:
+          forProvider:
+            name: "app-{{ .name }}"
+            taskTemplate:
+              containerSpec:
+                image: "{{ .spec.image }}"
+                ports:
+                  - targetPort: "{{ .spec.port }}"
+                    publishedPort: "{{ .spec.port }}"
+            mode:
+              replicated:
+                replicas: "{{ .spec.replicas }}"
+          providerConfigRef:
+            name: docker-provider
+      patches:
+        - fromFieldPath: "spec.image"
+          toFieldPath: "spec.forProvider.taskTemplate.containerSpec.image"
+        - fromFieldPath: "spec.port"
+          toFieldPath: "spec.forProvider.taskTemplate.containerSpec.ports[0].targetPort"
+        - fromFieldPath: "spec.port"
+          toFieldPath: "spec.forProvider.taskTemplate.containerSpec.ports[0].publishedPort"
+        - fromFieldPath: "spec.replicas"
+          toFieldPath: "spec.forProvider.mode.replicated.replicas"
+        - fromFieldPath: "metadata.name"
+          toFieldPath: "spec.forProvider.name"
+          transforms:
+            - type: string
+              string:
+                fmt: "app-%s"

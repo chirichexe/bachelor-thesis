@@ -20,7 +20,10 @@ Tutto ciò che devo fare è applicare il manifest, dimenticarmi delle API.
 
 ## 0.Installazione e Crossplane pods
 ```sh
-helm install crossplane crossplane-stable/crossplane --namespace crossplane-system --create-namespace
+helm repo add crossplane-stable https://charts.crossplane.io/stable
+helm repo update
+
+helm install crossplane crossplane-stable/crossplane --namespace crossplane-system --create-namespace --set installCRDs=true
 
 # Lo troverò poi disponibile con:
 kubectl get pods -n crossplane-system
@@ -121,7 +124,7 @@ Rappresenta un servizio esterno in un Provider [...](https://docs.crossplane.io/
 Architettura generale
 ![image](../../assets/composition-how-it-works.svg)
 
-Un Composition è un template per creare più ManagedResources come un singolo oggetto.
+Un Composition è un modello per la creazione più risorse gestite come un singolo oggetto.
 Esso descrive deployment più complessi, combinando più ManagedResources e le loro customizzazioni
 in un unico oggetto.
 
@@ -151,6 +154,49 @@ spec:
               name: Identifier for the resource.
               base: Base configuration of the resource, including apiVersion, kind, and spec.
 ```
+
+### Function: Patch and trasform 
+**IMPORTANTE**
+
+```yaml
+apiVersion: pkg.crossplane.io/v1
+kind: Function
+metadata:
+  name: function-patch-and-transform
+spec:
+  package: xpkg.crossplane.io/crossplane-contrib/function-patch-and-transform:v0.8.2
+```
+
+Installare una funzione crea un "function pod". Crossplane invia le richeste a questo pod per chiedergli quali risorse create quando riceve una risorsa composita.
+
+Crossplane fornisce una funzione predefinita chiamata function-patch-and-transform che consente di applicare trasformazioni alle risors
+
+### Composition Function
+
+Una Composition Function è un contenitore OCI (Docker) che implementa una logica personalizzata per generare risorse Kubernetes. Crossplane invoca queste funzioni passando lo stato corrente della XRD e riceve in risposta le risorse da creare o aggiornare.
+
+Crossplane chiama una funzione per determinare quali risorse dovrebbe creare quando crea una risorsa composita. La funzione dice anche a Crossplane cosa fare Con queste risorse quando si aggiorna o si elimina una XRD.
+
+Quando Crossplane chiama una funzione, invia lo stato corrente del composito - Una risorsa. Inoltre, invia lo stato attuale di qualsiasi risorsa gestita.
+
+**Come si utilizza**
+
+Definire un ```pipeline``` di ```steps```. Ogni ```step``` utilizza un ```functionRef``` per fare riferimento al ```name``` della funzione da chiamare
+
+Ogni funzione di composizione è in realtà un server gRPC. gRPC è Un framework di chiamata di procedura remota (RPC) ad alte prestazioni e open source. Dopo l'installazione di una funzione, Crossplane distribuisce il Funziona come un server gRPC. Crossplane encrypts e autentica tutto gRPC La comunicazione.
+
+Non è necessario essere un esperto di gRPC per scrivere una funzione. La funzione del Crossplane Configurazione degli SDK gRPC per voi. È utile capire come Crossplane chiama il tuo Funziona però e come la tua funzione dovrebbe rispondere.
+
+Esempio di una Composition Function personalizzata in Go:
+
+```go
+func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) (*fnv1.RunFunctionResponse, error) {
+        rsp := response.To(req, response.DefaultTTL)
+        response.Normal(rsp, "Hello world!")
+        return rsp, nil
+}
+```
+
 ## 5. CompositeResourceDefinition (XRD) 
 
 Un XRD è un CRD che definisce una API custom (utilizzata da developers o utenti finali) per interagire con risorse esterne. 
@@ -270,6 +316,165 @@ spec:                                       #| spec: [ importante il ResourceRef
 
  writeConnectionSecretToRef:
     name: my-claim-secret
+
+# Esempio: deployment dinamico di un'app nginx
+
+## 1. Creazione della xrd
+
+Questa risorsa definisce un nuovo tipo custom che potrai usare in Kubernetes: MyApp.
+Crossplane la usa per mappare il concetto di "composizione" di risorse Kubernetes
+
+Definisce un nuovo tipo MyApp con attributi custom (image, replicas)
+
+```yaml
+apiVersion: apiextensions.crossplane.io/v1
+kind: CompositeResourceDefinition
+metadata:
+  name: myapps.example.org # nome del CRD
+spec:
+  group: example.org
+  names:
+    kind: MyApp # nome del tipo
+    plural: myapps
+  claimNames:
+    kind: MyAppClaim # opzionale
+    plural: myappclaims
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema: # Definisce lo schema JSON/YAML del tipo MyApp:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties: # definisce gli attributi custom
+                image:
+                  type: string
+                replicas:
+                  type: integer
+```
+Dopo aver applicato il file potrei definire un oggetto di tipo MyApp, che rappresenta un'applicazione nginx con 3 repliche in questo modo:
+
+## 2. Creazione del composition
+
+Definisce una risorsa MyApp in risorse reali, cioè in un **Deployment** kubernetes
+
+```yml
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: myapp-deployment
+spec:
+  compositeTypeRef:
+    apiVersion: example.org/v1alpha1
+    # Dice che questa Composition si applica alle risorse di tipo MyApp.
+    kind: MyApp
+
+  # Dice che ogni MyApp genererà un Deployment chiamato my-nginx.
+  resources:
+    - name: appDeployment
+      base:
+        apiVersion: apps/v1
+        kind: Deployment
+        metadata:
+          name: my-nginx
+        
+        # Questo è il "template base" del Deployment. Può essere poi personalizzato dinamicamente con le patch.
+        spec:
+          replicas: 1
+          selector:
+            matchLabels:
+              app: my-nginx
+          template:
+            metadata:
+              labels:
+                app: my-nginx
+            spec:
+              containers:
+                - name: nginx
+                  image: nginx
+                  ports:
+                    - containerPort: 80
+      
+      # Questo è il "template base" del Deployment. Può essere poi personalizzato dinamicamente con le patch.
+      patches:
+
+      # Prende il campo image da MyApp.spec.image e lo copia nella sezione containers[0].image del Deployment.
+        - fromFieldPath: "spec.image"
+          toFieldPath: "spec.template.spec.containers[0].image"
+      
+      # Prende il campo replicas da MyApp.spec.replicas e lo copia nella sezione containers[0].replicas del Deployment.
+        - fromFieldPath: "spec.replicas"
+          toFieldPath: "spec.replicas"
+      
+```
+
+## 3. Definizione dell'istanza del tipo custom
+
+Quando la applichi, Crossplane intercetta l’oggetto MyApp, lo collega alla Composition myapp-deployment, e crea automaticamente il Deployment che hai specificato nella Composition.
+
+```yaml
+apiVersion: example.org/v1alpha1
+kind: MyApp
+spec:
+  image: nginx
+  replicas: 3
+```
+
+## 4. Definizione della Composition con pipeline
+
+Dopo aver applicato la funzione patch-and-transform come scritto sopra, posso definire una Composition con pipeline.
+
+```yaml
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: myapp-deployment
+spec:
+  compositeTypeRef:
+    apiVersion: example.org/v1alpha1
+    kind: MyApp
+  mode: Pipeline
+  pipeline:
+    - step: patch-and-transform
+      functionRef:
+        name: function-patch-and-transform
+      input:
+        apiVersion: pt.fn.crossplane.io/v1beta1
+        kind: Resources
+        resources:
+          - name: appDeployment
+            base:
+              apiVersion: apps/v1
+              kind: Deployment
+              metadata:
+                name: my-nginx
+              spec:
+                replicas: 1
+                selector:
+                  matchLabels:
+                    app: my-nginx
+                template:
+                  metadata:
+                    labels:
+                      app: my-nginx
+                  spec:
+                    containers:
+                      - name: nginx
+                        image: nginx
+                        ports:
+                          - containerPort: 80
+            patches:
+              - fromFieldPath: "spec.image"
+                toFieldPath: "spec.template.spec.containers[0].image"
+              - fromFieldPath: "spec.replicas"
+                toFieldPath: "spec.replicas"
+```
+
+## 5. Creazione di una composition funcion personalizzata
+
 
 
 # Documentazione consultata

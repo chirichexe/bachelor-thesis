@@ -1,0 +1,6 @@
+apiVersion: iot.example.org/v1alpha1
+kind: Experiment
+metadata:
+  name: my-first-experiment
+spec: {}
+

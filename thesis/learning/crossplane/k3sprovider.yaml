@@ -1,0 +1,9 @@
+apiVersion: kubernetes.crossplane.io/v1alpha1
+kind: ProviderConfig
+metadata:
+  name: k3s-provider
+spec:
+  credentials:
+    source: InjectedIdentity
+  identity:
+    type: System

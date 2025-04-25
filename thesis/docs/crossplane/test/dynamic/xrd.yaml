@@ -1,0 +1,27 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: CompositeResourceDefinition
+metadata:
+  name: myapps.example.org # nome del CRD
+spec:
+  group: example.org
+  names:
+    kind: MyApp # nome del tipo
+    plural: myapps
+  claimNames:
+    kind: MyAppClaim # opzionale
+    plural: myappclaims
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema: # Definisce lo schema JSON/YAML del tipo MyApp:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties: # definisce gli attributi custom
+                image:
+                  type: string
+                replicas:
+                  type: integer

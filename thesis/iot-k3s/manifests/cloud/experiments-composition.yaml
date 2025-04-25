@@ -1,0 +1,133 @@
+# CompositeResourceDefinition per Experiment
+# Definisce la risorsa composita "Experiment" che rappresenta un esperimento IoT
+apiVersion: apiextensions.crossplane.io/v1
+kind: CompositeResourceDefinition
+metadata:
+  name: experiments.iot.example.org
+spec:
+  group: iot.example.org
+  names:
+    kind: Experiment
+    listKind: ExperimentList
+    plural: experiments
+    singular: experiment
+  claimNames:
+    kind: ExperimentClaim
+    plural: experimentclaims
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                namespace:
+                  type: string
+                devices:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                      image:
+                        type: string
+                      args:
+                        type: array
+                        items:
+                          type: string
+                      env:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            name:
+                              type: string
+                            value:
+                              type: string
+                providerConfigRef:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+---
+# Composition per Experiment
+# Genera le risorse Kubernetes e Crossplane necessarie: Namespace e IoTDevice
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: experiment-composition
+spec:
+  # Si applica alle risorse Experiment definiti sopra
+  compositeTypeRef:
+    apiVersion: iot.example.org/v1alpha1
+    kind: Experiment
+  # Mappatura delle risorse da creare
+  resources:
+  # 1) Namespace dedicato all'esperimento
+  - name: ns
+    base:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: # patch da spec.namespace
+    patches:
+      - fromFieldPath: spec.namespace
+        toFieldPath: metadata.name
+
+  # 2) Slot fisso per il primo dispositivo
+  - name: iot-dev-0
+    base:
+      apiVersion: iot.example.org/v1alpha1
+      kind: IoTDevice
+      metadata:
+        # Nome generato combina nome Experiment e indice
+        name: "${metadata.name}-dev0"
+    patches:
+      - fromFieldPath: spec.devices[0].name
+        toFieldPath: spec.name
+      - fromFieldPath: spec.devices[0].image
+        toFieldPath: spec.image
+      - fromFieldPath: spec.devices[0].args
+        toFieldPath: spec.args
+      - fromFieldPath: spec.devices[0].env
+        toFieldPath: spec.env
+      - fromFieldPath: spec.providerConfigRef.name
+        toFieldPath: spec.providerConfigRef.name
+
+  # 3) Slot per il secondo dispositivo (ripetere per N slot richiesti)
+  - name: iot-dev-1
+    base:
+      apiVersion: iot.example.org/v1alpha1
+      kind: IoTDevice
+      metadata:
+        name: "${metadata.name}-dev1"
+    patches:
+      - fromFieldPath: spec.devices[1].name
+        toFieldPath: spec.name
+      - fromFieldPath: spec.devices[1].image
+        toFieldPath: spec.image
+      - fromFieldPath: spec.devices[1].args
+        toFieldPath: spec.args
+      - fromFieldPath: spec.devices[1].env
+        toFieldPath: spec.env
+      - fromFieldPath: spec.providerConfigRef.name
+        toFieldPath: spec.providerConfigRef.name
+
+# Spiegazione delle interazioni:
+# 1. Quando applichi un Experiment, Crossplane usa questa Composition.
+# 2. Crea il Namespace 'spec.namespace'.
+# 3. Per ogni slot (iot-dev-0, iot-dev-1, ...), legge i parametri spec.devices[i]
+#    e genera un oggetto IoTDevice con patch su nome, image, args, env e providerConfigRef.
+# 4. I controller Crossplane rilevano le risorse Composite:
+#    - "Experiment Controller": gestisce questo Composition, mantiene il namespace e le IoTDevice.
+#    - "IoTDevice Controller": vede le IoTDevice e, tramite il ProviderConfig Docker,
+#      invoca l'API Docker remota per creare/eliminare container sulla VM IoT.
+# 5. Le risorse figlie (Namespace, IoTDevice) vengono gestite in modo dichiarativo:
+#    aggiornamenti di spec.devices -> aggiunta/rimozione di risorse.
+# 6. Lo status aggregato delle IoTDevice risale fino a Experiment.status,
+#    fornendo visibilità sull'intero esperimento.

@@ -1,0 +1,11 @@
+apiVersion: platform.example.com/v1alpha1
+kind: DockerContainer
+metadata:
+  name: my-app
+spec:
+  parameters:
+    image: nginx:latest
+    port: 80
+    envVars:
+      ENV_VAR_1: value1
+      ENV_VAR_2: value2

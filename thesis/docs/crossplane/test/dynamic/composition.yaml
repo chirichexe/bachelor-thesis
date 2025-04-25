@@ -1,0 +1,49 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: myapp-deployment
+
+spec:
+  compositeTypeRef:
+    apiVersion: example.org/v1alpha1
+    # Dice che questa Composition si applica alle risorse di tipo MyApp.
+    kind: MyApp
+
+  # Ogni risorsa MyApp genererà un Deployment Kubernetes.
+  resources:
+    - name: appDeployment
+      base:
+        apiVersion: apps/v1
+        kind: Deployment
+        metadata:
+          labels:
+            app: my-nginx
+        
+        # Questo è il "template base" del Deployment. Verrà personalizzato con le patch.
+        spec:
+          replicas: 1  # Questo valore verrà sovrascritto da una patch
+          selector:
+            matchLabels:
+              app: my-nginx
+          template:
+            metadata:
+              labels:
+                app: my-nginx
+
+            spec:
+              containers:
+                - name: nginx
+                  image: nginx  # Questo valore verrà sovrascritto da una patch
+                  ports:
+                    - containerPort: 80
+      
+      # Le patch servono a copiare i valori dal CR MyApp verso il Deployment.
+      patches:
+
+        - fromFieldPath: "spec.image"
+          toFieldPath: "spec.template.spec.containers[0].image"
+        
+        # Prende il campo replicas da MyApp.spec.replicas e lo copia in spec.replicas del Deployment.
+        - fromFieldPath: "spec.replicas"
+          toFieldPath: "spec.replicas"
+        

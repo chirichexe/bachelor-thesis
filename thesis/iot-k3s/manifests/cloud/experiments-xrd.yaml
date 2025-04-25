@@ -1,0 +1,94 @@
+# CompositeResourceDefinition per Experiment
+# Definisce la risorsa composita "Experiment" che rappresenta un esperimento IoT
+apiVersion: apiextensions.crossplane.io/v1
+kind: CompositeResourceDefinition
+metadata:
+  # Nome univoco della XRD
+  name: experiments.iot.example.org
+spec:
+  # Gruppo API personalizzato per le risorse IoT
+  group: iot.example.org
+  # Nome delle risorse create da questa XRD
+  names:
+    kind: Experiment            # Kind principale
+    listKind: ExperimentList    # Kind per liste
+    plural: experiments         # Plurale per URL
+    singular: experiment        # Singolare per URL
+  # Definisce le claim per l'uso come risorsa di livello superiore (opzionale)
+  claimNames:
+    kind: ExperimentClaim       # Kind per le claim
+    plural: experimentclaims
+  # Versioni supportate della risorsa
+  versions:
+    - name: v1alpha1             # Versione della API
+      served: true               # Disponibile nell’API
+      referenceable: true        # Può essere referenziata da altre risorse
+      schema:
+        # Definizione dello schema OpenAPI per la validazione
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                # Nome del namespace da creare per l'esperimento
+                namespace:
+                  type: string
+                # Lista di dispositivi da gestire nell'esperimento
+                devices:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      # Identificativo univoco del device nella composizione
+                      name:
+                        type: string
+                      # Immagine Docker da usare
+                      image:
+                        type: string
+                      # Eventuali argomenti di avvio
+                      args:
+                        type: array
+                        items:
+                          type: string
+                      # Variabili d'ambiente da passare al container
+                      env:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            name:
+                              type: string
+                            value:
+                              type: string
+                # Reference al ProviderConfig per Docker (se necessario)
+                providerConfigRef:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+      # Status opzionale per riportare lo stato dell'esperimento
+
+---
+# Integrazione con altre componenti Crossplane
+# 1. Composition "experiment-composition":
+#    - Legge spec.namespace e crea un Namespace Kubernetes
+#    - Per ciascun elemento spec.devices[N], istanzia una risorsa IoTDevice
+#      tramite la XRD IoTDevice e la relativa Composition
+# 2. IoTDevice XRD + Composition:
+#    - Crea un Managed Resource Docker Container sulla VM IoT
+# 3. ProviderConfig Docker:
+#    - Definisce dove (host:port) contattare il daemon Docker remoto
+# 4. Controller Crossplane:
+#    - "Experiment Controller": osserva tutte le Experiment e sincronizza
+#      le risorse figlie (Namespace, IoTDevice)
+#    - "IoTDevice Controller": osserva IoTDevice e materializza container
+#      Docker sul nodo IoT
+# 5. API REST lato Cloud:
+#    - Traduce chiamate REST (POST/GET/DELETE) in creazione/lettura
+#      delle risorse Experiment nel cluster
+# Cosa deve fare correttamente questa XRD:
+# - Validare la struttura della risorsa Experiment
+# - Esporre spec e status per orchestrare namespace e device
+# - Consentire alle Composition e ai controller di derivare
+#   tutte le risorse necessarie in modo dichiarativo

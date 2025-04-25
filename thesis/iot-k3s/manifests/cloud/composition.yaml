@@ -1,0 +1,20 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: experiment-composition
+  labels:
+    crossplane.io/xrd: experiments.iot.example.org
+spec:
+  compositeTypeRef:
+    apiVersion: iot.example.org/v1alpha1
+    kind: Experiment
+  resources:
+    - name: ns
+      base:
+        apiVersion: v1
+        kind: Namespace
+        metadata:
+          name: placeholder-name
+      patches:
+        - fromFieldPath: "metadata.name"
+          toFieldPath: "metadata.name"

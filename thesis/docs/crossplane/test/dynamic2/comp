@@ -1,0 +1,52 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: app-composition
+spec:
+  compositeTypeRef:
+    apiVersion: example.org/v1alpha1
+    kind: XApplication
+  resources:
+    - name: deployment
+      base:
+        apiVersion: apps/v1
+        kind: Deployment
+        metadata:
+          name: simple-app
+        spec:
+          replicas: 1
+          selector:
+            matchLabels:
+              app: simple-app
+          template:
+            metadata:
+              labels:
+                app: simple-app
+            spec:
+              containers:
+                - name: app-container
+                  image: nginx  # sarà sovrascritto dinamicamente
+                  ports:
+                    - containerPort: 80
+      patches:
+        - fromFieldPath: "spec.image"
+          toFieldPath: "spec.template.spec.containers[0].image"
+        - fromFieldPath: "spec.port"
+          toFieldPath: "spec.template.spec.containers[0].ports[0].containerPort"
+    - name: service
+      base:
+        apiVersion: v1
+        kind: Service
+        metadata:
+          name: simple-app-service
+        spec:
+          selector:
+            app: simple-app
+          ports:
+            - port: 80
+              targetPort: 80
+      patches:
+        - fromFieldPath: "spec.port"
+          toFieldPath: "spec.ports[0].port"
+        - fromFieldPath: "spec.port"
+          toFieldPath: "spec.ports[0].targetPort"

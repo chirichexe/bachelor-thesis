@@ -1,0 +1,56 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: k8s-app-deployment
+spec:
+  compositeTypeRef:
+    apiVersion: app.example.org/v1alpha1
+    kind: XDeployment
+  resources:
+    - name: k8s-deployment
+      base:
+        apiVersion: apps/v1
+        kind: Deployment
+        metadata:
+          name: "{{ .metadata.name }}-deployment"
+        spec:
+          replicas: {{ .spec.replicas }}
+          selector:
+            matchLabels:
+              app: "{{ .metadata.name }}"
+          template:
+            metadata:
+              labels:
+                app: "{{ .metadata.name }}"
+            spec:
+              containers:
+              - name: main
+                image: "{{ .spec.image }}"
+                ports:
+                - containerPort: {{ .spec.port }}
+      patches:
+        - fromFieldPath: "spec.image"
+          toFieldPath: "spec.template.spec.containers[0].image"
+        - fromFieldPath: "spec.port"
+          toFieldPath: "spec.template.spec.containers[0].ports[0].containerPort"
+        - fromFieldPath: "spec.replicas"
+          toFieldPath: "spec.replicas"
+    
+    - name: k8s-service
+      base:
+        apiVersion: v1
+        kind: Service
+        metadata:
+          name: "{{ .metadata.name }}-service"
+        spec:
+          ports:
+          - port: {{ .spec.port }}
+            targetPort: {{ .spec.port }}
+          selector:
+            app: "{{ .metadata.name }}"
+          type: ClusterIP
+      patches:
+        - fromFieldPath: "spec.port"
+          toFieldPath: "spec.ports[0].port"
+        - fromFieldPath: "spec.port"
+          toFieldPath: "spec.ports[0].targetPort"

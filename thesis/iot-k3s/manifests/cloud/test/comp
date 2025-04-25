@@ -1,0 +1,19 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: experiment-namespace
+spec:
+  compositeTypeRef:
+    apiVersion: myorg.io/v1alpha1
+    kind: Experiment
+  resources:
+    - name: experiment-namespace
+      base:
+        apiVersion: v1
+        kind: Namespace
+        metadata:
+          name: placeholder
+      patches:
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.namespaceName"
+          toFieldPath: "metadata.name"

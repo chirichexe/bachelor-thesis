@@ -1,0 +1,7 @@
+apiVersion: example.org/v1alpha1
+kind: Application
+metadata:
+  name: my-nginx-app
+spec:
+  image: nginx:latest
+  port: 8080

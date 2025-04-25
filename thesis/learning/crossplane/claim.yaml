@@ -1,0 +1,9 @@
+apiVersion: example.org/v1alpha1
+kind: DockerApp
+metadata:
+  name: my-nginx-app
+  namespace: default
+spec:
+  image: nginx:latest
+  port: 80
+  replicas: 2
